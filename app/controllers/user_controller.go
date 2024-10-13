@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"go_fiber_crud/app/helpers"
 	"go_fiber_crud/app/models"
 	"go_fiber_crud/configs"
 
@@ -15,7 +16,11 @@ func UserController(route fiber.Router, db *configs.Database) {
 func UserIndex(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var User []models.User
-		if response := db.Find(&User); response.Error != nil {
+		var UserCount int64
+
+		db.Model(&User).Count(&UserCount)
+
+		if response := db.Scopes(helpers.Paginate(c)).Find(&User); response.Error != nil {
 			panic("Error occurred while retrieving roles from the database: " + response.Error.Error())
 		}
 		err := c.JSON(User)
@@ -25,8 +30,9 @@ func UserIndex(db *configs.Database) fiber.Handler {
 		}
 
 		return c.JSON(fiber.Map{
-			"success": true,
-			"users":   User,
+			"success":    true,
+			"usersTotal": UserCount,
+			"users":      User,
 		})
 	}
 }
