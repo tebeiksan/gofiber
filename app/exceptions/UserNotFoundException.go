@@ -10,5 +10,5 @@ func UserNotFoundException(c *fiber.Ctx, code int, messages ...string) error {
 		messages = append(messages, message)
 	}
 
-	return New(c, code, messages)
+	return New(c, code, messages, GetFunctionName(UserNotFoundException))
 }

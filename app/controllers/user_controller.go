@@ -6,6 +6,7 @@ import (
 	"go_fiber_crud/app/exceptions"
 	"go_fiber_crud/app/helpers"
 	"go_fiber_crud/app/models"
+	"go_fiber_crud/app/resources"
 	"go_fiber_crud/configs"
 
 	"github.com/gofiber/fiber/v2"
@@ -30,20 +31,14 @@ func UserIndex(db *configs.Database) fiber.Handler {
 
 		var search = "%" + c.Query("search") + "%"
 
-		if response := db.Scopes(helpers.Paginate(c)).Where("email like ?", search).Find(&User); response.Error != nil {
-			panic("Error occurred while retrieving roles from the database: " + response.Error.Error())
-		}
-		err := c.JSON(User)
+		getUsers := db.Scopes(helpers.Paginate(c)).Where("email like ?", search).Find(&User)
 
-		if err != nil {
-			panic("Error occurred when returning JSON of user: " + err.Error())
+		if getUsers.Error != nil {
+			return exceptions.DatabaseException(c, fiber.ErrInternalServerError.Code, fmt.Sprint(getUsers.Error))
 		}
 
-		return c.JSON(fiber.Map{
-			"success":    true,
-			"usersTotal": UserCount,
-			"users":      User,
-		})
+		return resources.New(c, User)
+
 	}
 }
 
@@ -59,19 +54,13 @@ func UserCreate(db *configs.Database) fiber.Handler {
 
 		user := models.User{Id: uuid, Name: request.Name, Email: request.Email}
 
-		result := db.Create(&user)
+		createUser := db.Create(&user)
 
-		if result.Error != nil {
-			return c.JSON(fiber.Map{
-				"success": false,
-				"message": fmt.Sprint(result.Error),
-			})
+		if createUser.Error != nil {
+			return exceptions.UserCreateFailedException(c, fiber.ErrInternalServerError.Code, fmt.Sprint(createUser.Error))
 		}
 
-		return c.JSON(fiber.Map{
-			"success": true,
-			"users":   user,
-		})
+		return resources.New(c, user)
 
 	}
 }
@@ -80,16 +69,13 @@ func UserShow(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var user = models.User{Id: c.Params("id")}
 
-		result := db.First(&user)
+		getUser := db.First(&user)
 
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if errors.Is(getUser.Error, gorm.ErrRecordNotFound) {
 			return exceptions.UserNotFoundException(c, fiber.ErrNotFound.Code)
 		}
 
-		return c.JSON(fiber.Map{
-			"success": true,
-			"users":   user,
-		})
+		return resources.New(c, user)
 	}
 }
 
@@ -97,24 +83,26 @@ func UserUpdate(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var user = models.User{Id: c.Params("id")}
 
-		result := db.First(&user)
+		getUser := db.First(&user)
 
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if errors.Is(getUser.Error, gorm.ErrRecordNotFound) {
 			return exceptions.UserNotFoundException(c, fiber.ErrNotFound.Code)
 		}
 
 		request := new(models.User)
 
 		if err := c.BodyParser(request); err != nil {
-			return err
+			return exceptions.BaseException(c, fiber.ErrUnprocessableEntity.Code, fmt.Sprint(err))
 		}
 
-		db.Model(&user).Updates(models.User{Name: request.Name})
+		updateUser := db.Model(&user).Updates(models.User{Name: request.Name})
 
-		return c.JSON(fiber.Map{
-			"success": true,
-			"users":   user,
-		})
+		if updateUser.Error != nil {
+			return exceptions.UserUpdateFailedException(c, fiber.ErrUnprocessableEntity.Code, fmt.Sprint(updateUser.Error))
+		}
+
+		return resources.New(c, user)
+
 	}
 }
 
@@ -122,17 +110,18 @@ func UserDelete(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var user = models.User{Id: c.Params("id")}
 
-		result := db.First(&user)
+		getUser := db.First(&user)
 
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if errors.Is(getUser.Error, gorm.ErrRecordNotFound) {
 			return exceptions.UserNotFoundException(c, fiber.ErrNotFound.Code)
 		}
 
-		db.Delete(&user)
+		deleteUser := db.Delete(&user)
 
-		return c.JSON(fiber.Map{
-			"success": true,
-			"users":   user,
-		})
+		if deleteUser.Error != nil {
+			return exceptions.UserDeleteFailedException(c, fiber.ErrNotFound.Code, fmt.Sprint(deleteUser.Error))
+		}
+
+		return resources.New(c, user)
 	}
 }

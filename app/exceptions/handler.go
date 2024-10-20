@@ -1,8 +1,19 @@
 package exceptions
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"reflect"
+	"runtime"
+	"strings"
 
-func New(c *fiber.Ctx, code int, messages []string) error {
+	"github.com/gofiber/fiber/v2"
+)
+
+func GetFunctionName(i interface{}) string {
+	strs := strings.Split((runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()), ".")
+	return strs[len(strs)-1]
+}
+
+func New(c *fiber.Ctx, code int, messages []string, exceptionName string) error {
 
 	var message string
 
@@ -20,5 +31,6 @@ func New(c *fiber.Ctx, code int, messages []string) error {
 	return c.JSON(fiber.Map{
 		"success": false,
 		"message": message,
+		"data":    map[string]string{"exception": exceptionName},
 	})
 }
