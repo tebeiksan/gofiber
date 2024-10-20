@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"go_fiber_crud/app/exceptions"
 	"go_fiber_crud/app/helpers"
 	"go_fiber_crud/app/models"
 	"go_fiber_crud/configs"
@@ -15,9 +16,9 @@ import (
 func UserController(route fiber.Router, db *configs.Database) {
 	route.Get("/", UserIndex(db))
 	route.Post("/", UserCreate(db))
-	route.Get("/:Id", UserShow(db))
-	route.Put("/:Id", UserUpdate(db))
-	route.Delete("/:Id", UserDelete(db))
+	route.Get("/:id", UserShow(db))
+	route.Put("/:id", UserUpdate(db))
+	route.Delete("/:id", UserDelete(db))
 }
 
 func UserIndex(db *configs.Database) fiber.Handler {
@@ -77,15 +78,12 @@ func UserCreate(db *configs.Database) fiber.Handler {
 
 func UserShow(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user = models.User{Id: c.Params("Id")}
+		var user = models.User{Id: c.Params("id")}
 
 		result := db.First(&user)
 
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return c.JSON(fiber.Map{
-				"success": false,
-				"message": "User not found",
-			})
+			return exceptions.UserNotFoundException(c, fiber.ErrNotFound.Code)
 		}
 
 		return c.JSON(fiber.Map{
@@ -97,15 +95,12 @@ func UserShow(db *configs.Database) fiber.Handler {
 
 func UserUpdate(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user = models.User{Id: c.Params("Id")}
+		var user = models.User{Id: c.Params("id")}
 
 		result := db.First(&user)
 
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return c.JSON(fiber.Map{
-				"success": false,
-				"message": "User not found",
-			})
+			return exceptions.UserNotFoundException(c, fiber.ErrNotFound.Code)
 		}
 
 		request := new(models.User)
@@ -125,15 +120,12 @@ func UserUpdate(db *configs.Database) fiber.Handler {
 
 func UserDelete(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user = models.User{Id: c.Params("Id")}
+		var user = models.User{Id: c.Params("id")}
 
 		result := db.First(&user)
 
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return c.JSON(fiber.Map{
-				"success": false,
-				"message": "User not found",
-			})
+			return exceptions.UserNotFoundException(c, fiber.ErrNotFound.Code)
 		}
 
 		db.Delete(&user)

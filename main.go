@@ -1,6 +1,7 @@
 package main
 
 import (
+	"go_fiber_crud/app/exceptions"
 	"go_fiber_crud/configs"
 	"go_fiber_crud/routes"
 
@@ -27,7 +28,7 @@ func main() {
 
 	app.Use(func(c *fiber.Ctx) error {
 		if dbErr != nil {
-			return fiber.NewError(fiber.StatusServiceUnavailable, "Error DB connection")
+			return exceptions.DatabaseException(c, fiber.ErrServiceUnavailable.Code)
 		}
 
 		return c.Next()
