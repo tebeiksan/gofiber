@@ -36,8 +36,7 @@ func UserIndex(db *configs.Database) fiber.Handler {
 		if getUsers.Error != nil {
 			return exceptions.DatabaseException(c, fiber.ErrInternalServerError.Code, fmt.Sprint(getUsers.Error))
 		}
-
-		return resources.New(c, User)
+		return resources.New(c, User, UserCount)
 
 	}
 }

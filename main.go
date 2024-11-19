@@ -17,7 +17,7 @@ func main() {
 		Username: "root",
 		Password: "",
 		Port:     3306,
-		Database: "golang",
+		Database: "services",
 	}
 
 	db, dbErr := configs.DatabaseNew(&databaseConfig)
@@ -36,5 +36,5 @@ func main() {
 
 	routes.Api(app, db)
 
-	app.Listen(":3000")
+	app.Listen(":3333")
 }
