@@ -27,15 +27,20 @@ func UserIndex(db *configs.Database) fiber.Handler {
 		var User []models.User
 		var UserCount int64
 
-		db.Model(&User).Count(&UserCount)
-
 		var search = "%" + c.Query("search") + "%"
 
-		getUsers := db.Scopes(helpers.Paginate(c)).Where("email like ?", search).Find(&User)
+		// getUsers := db.Scopes(helpers.Paginate(c)).Where("email like ?", search).Find(&User)
+		// getUsers := db.Where("email like ?", search).Session(&gorm.Session{})
+
+		getUsers := db.Model(&User).Where("email like ?", search).Session(&gorm.Session{})
 
 		if getUsers.Error != nil {
 			return exceptions.DatabaseException(c, fiber.ErrInternalServerError.Code, fmt.Sprint(getUsers.Error))
 		}
+
+		getUsers.Count(&UserCount)
+		getUsers.Scopes(helpers.Paginate(c)).Find(&User)
+
 		return resources.New(c, User, UserCount)
 
 	}
