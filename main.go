@@ -7,6 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
@@ -20,11 +22,13 @@ func main() {
 		Database: "services",
 	}
 
-	db, dbErr := configs.DatabaseNew(&databaseConfig)
-
 	app := fiber.New()
 
+	app.Use(cors.New())
+
 	app.Use(recover.New())
+
+	db, dbErr := configs.DatabaseNew(&databaseConfig)
 
 	app.Use(func(c *fiber.Ctx) error {
 		if dbErr != nil {

@@ -8,6 +8,7 @@ import (
 	"go_fiber_crud/app/models"
 	"go_fiber_crud/app/resources"
 	"go_fiber_crud/configs"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -27,19 +28,23 @@ func UserIndex(db *configs.Database) fiber.Handler {
 		var User []models.User
 		var UserCount int64
 
-		var search = "%" + c.Query("search") + "%"
-
 		// getUsers := db.Scopes(helpers.Paginate(c)).Where("email like ?", search).Find(&User)
 		// getUsers := db.Where("email like ?", search).Session(&gorm.Session{})
 
-		getUsers := db.Model(&User).Where("email like ?", search).Session(&gorm.Session{})
+		getUsers := db.Model(&User)
 
-		if getUsers.Error != nil {
-			return exceptions.DatabaseException(c, fiber.ErrInternalServerError.Code, fmt.Sprint(getUsers.Error))
+		var search = c.Query("search")
+
+		if strings.TrimSpace(search) != "" {
+			getUsers.Where("email like ?", "%"+search+"%").Session(&gorm.Session{})
 		}
 
 		getUsers.Count(&UserCount)
 		getUsers.Scopes(helpers.Paginate(c)).Find(&User)
+
+		if getUsers.Error != nil {
+			return exceptions.DatabaseException(c, fiber.ErrInternalServerError.Code, fmt.Sprint(getUsers.Error))
+		}
 
 		return resources.New(c, User, UserCount)
 
@@ -49,6 +54,7 @@ func UserIndex(db *configs.Database) fiber.Handler {
 func UserCreate(db *configs.Database) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		request := new(models.User)
+		return exceptions.UserCreateFailedException(c, fiber.ErrInternalServerError.Code, fmt.Sprint("error coba cok"))
 
 		if err := c.BodyParser(request); err != nil {
 			return err
